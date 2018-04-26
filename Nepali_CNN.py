@@ -31,10 +31,7 @@ try_set_default_device(gpu(0), acquire_device_lock=True)
 print(get_gpu_properties(gpu(0)))
 
 
-#%%
-
-
-#fonction utile pour le tracing
+#little usefull function for tracing
 def p(mess,obj):
     """Useful function for tracing"""
     if hasattr(obj,'shape'):
@@ -52,19 +49,16 @@ print(X.shape)
 print(len(y))
 print(y)  
 
-n_row, n_col = 20, 25
-n_components = n_row * n_col
-image_shape = (36, 36)
 # input image dimensions
+image_shape = (36, 36)
 img_rows, img_cols = image_shape
 
 model_path = 'nepali.h5'
 temp_path = 'temp.h5'
 
-
 batch_size = 32
 num_classes = len(np.unique(y))
-epochs = 1
+epochs = 16
 
 def plot_gallery(title, images, image_shape):
     p('images',images)
@@ -110,16 +104,6 @@ def plot_history(history):
     plt.legend()
     plt.show()
    
-#network = models.Sequential()
-#network.add(layers.Dense(512, activation='relu', input_shape=(36 * 36,)))
-#network.add(layers.Dense(len(np.unique(y)), activation='softmax'))
-#network.compile(optimizer='rmsprop',
-#                loss='categorical_crossentropy',
-#                metrics=['accuracy'])
-
-
-
-
 train_images, test_images, train_labels, test_labels = train_test_split(X, y, test_size=0.2, random_state=0)
 
 train_images = train_images.reshape(len(train_images), 36 * 36)
@@ -130,12 +114,6 @@ test_images_original = test_images
 train_labels = to_categorical(train_labels)
 test_labels_original = test_labels
 test_labels = to_categorical(test_labels)
-
-#plot_gallery("First centered number images", train_images[:n_components], image_shape)
-
-#network.fit(train_images, train_labels, epochs=5, batch_size=128)
-#test_loss, test_acc = network.evaluate(test_images, test_labels)
-#print('test_acc:', test_acc)
 
 if K.image_data_format() == 'channels_first':
     train_images = train_images.reshape(train_images.shape[0], 1, img_rows, img_cols)
@@ -222,13 +200,12 @@ def plot_gallery_2(title, images, image_shape, predicted_class=None , prediction
         idx_sort = np.argsort(predictions[i])[::-1]
         if predicted_class is not None and predictions is not None and targets is not None:
             #guess = predicted_class[i]
-            first_guess = idx_sort[0]
-            second_guess = idx_sort[1]
-            third_guess = idx_sort[2]
-            fourth_guess = idx_sort[3]
+#            first_guess = idx_sort[0]
+#            second_guess = idx_sort[1]
+#            third_guess = idx_sort[2]
+#            fourth_guess = idx_sort[3]
             true = targets[i]
             guess_rank = idx_sort.tolist().index(true)
-            #p('guess_rank',guess_rank)
             #display = str(true)+'/'+str(first_guess)+'-'+str(second_guess)+'-'+str(third_guess)+'-'+str(fourth_guess)
             display = str(true)+' / '+str(guess_rank)
             plt.title(display)
@@ -237,9 +214,6 @@ def plot_gallery_2(title, images, image_shape, predicted_class=None , prediction
     plt.subplots_adjust(0.01, 0.05, 0.99, 0.93, 0.25, 0.50)
 
 plot_gallery_2("Wrong guesses", wrong_guesses_images, image_shape, wrong_guesses_class, wrong_guesses_predictions, good_labels)
-
-
-
 
 
 score = model.evaluate(test_images, test_labels, verbose=0)
@@ -252,14 +226,7 @@ intermediate_layer_model = Model(inputs=model.input,
                                  outputs=model.layers[1].output)
 intermediate_output = intermediate_layer_model.predict(test_images)
 
-#weight_map = np.array([intermediate_output[:, :, :, i] for i in range(intermediate_output.shape[3])]).shape()
-
-#weight_map = np.array(weight_map).reshape(intermediate_output.shape[0],intermediate_output.shape[1],intermediate_output.shape[2],intermediate_output.shape[3])
-#
-#weight_map = np.array(np.split(weight_map,3)).reshape(intermediate_output.shape[0],intermediate_output.shape[1],intermediate_output.shape[2])
-
 weights = np.array(model.get_weights())
-#p('weights',weights)
 for w in weights:
     print(w.shape)
     
@@ -269,13 +236,12 @@ plot_gallery("conv1 weights", weight_map, (cur_weights.shape[0], cur_weights.sha
 
 cur_weights = weights[2]
 weight_map = np.moveaxis(cur_weights, [0, 1, 2, 3], [2, 3, 1, 0]).reshape(-1, cur_weights.shape[0], cur_weights.shape[1])
-#p('weight_map',weight_map)
 plot_gallery("conv2 weights", weight_map, (cur_weights.shape[0], cur_weights.shape[1]))
 
+cur_weights = weights[4]
+weight_map = np.moveaxis(cur_weights, [0, 1, 2, 3], [2, 3, 1, 0]).reshape(-1, cur_weights.shape[0], cur_weights.shape[1])
+plot_gallery("conv3 weights", weight_map, (cur_weights.shape[0], cur_weights.shape[1]))
 
-#weight_map = np.moveaxis(weights[4], [0, 1, 2, 3], [2, 3, 1, 0]).reshape(-1, 5, 5)
-##p('weight_map',weight_map)
-#plot_gallery("conv2 weights", weight_map, (5, 5))
 
 
 def plot_image(image, image_shape, n_col, n_row, index):
@@ -297,16 +263,11 @@ def plot_layers_weights(title, model):
     for i, w in enumerate(weights):
         print(w.shape)
         if(len(w.shape)==4):
-            #p('i',i)
-            #p('w',w)
             weight_shape.append(w.shape)
             movaxis = np.moveaxis(w, [0, 1, 2, 3], [3, 2, 0, 1])
             add_weights = movaxis.reshape(-1,movaxis.shape[2],movaxis.shape[3])
-           # p('add_weights',add_weights)
             weight_map.append(add_weights)
         elif(len(w.shape)==1):
-            #p('i',i)
-            #p('w',w)
             add_bias = w 
             bias.append(add_bias)  
     
@@ -329,20 +290,14 @@ def plot_layers_weights(title, model):
     p('grid_size',grid_size)
     for i, layer_0 in enumerate(weight_map[0]):
         if(len(weight_map)>1):
-            #p('layer_0 '+str(i),layer_0)
             plot_image(layer_0, layer_0.shape, n_col, n_row, (i*n_col) + 1)
             cnt+=2
-            #p('weight_shape',weight_shape)
-            #p('weight_map[1]',weight_map[1])
-            #p('nb_kernel_layer_1',nb_kernel_layer_1)
             for j, layer_1 in enumerate(weight_map[1][ i *nb_kernel_layer_1 : ((i+1) * nb_kernel_layer_1) ]):
-                #p('layer_1 '+str(j),layer_1)
                 plot_image(layer_1, layer_1.shape, n_col, n_row, (i*n_col) + 3 + j)
                 cnt+=1
         else:
             plot_image(layer_0, layer_0.shape, n_col, n_row, i + 1)
             cnt+=1
-    
     
     plt.subplots_adjust(0.01, 0.05, 0.99, 0.93, 0.2, 0.1)
     
